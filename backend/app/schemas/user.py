@@ -22,6 +22,10 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class UserUpdate(BaseModel):
+    name: str = Field(min_length=1)
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
