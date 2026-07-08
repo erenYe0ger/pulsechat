@@ -5,6 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../hooks/useSocket";
 import type { Conversation, Message } from "../types/chat";
 import MessageBubble from "./MessageBubble";
+import MessageInput from "./MessageInput";
+import TypingIndicator from "./TypingIndicator";
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -14,9 +16,10 @@ interface ChatWindowProps {
 function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
-  const { lastMessage, readReceipt } = useSocket();
+  const { lastMessage, readReceipt, typingStatus } = useSocket();
 
   useEffect(() => {
     let isCurrentConversation = true;
@@ -75,6 +78,22 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
   }, [conversation.id, readReceipt]);
 
   useEffect(() => {
+    if (
+      !typingStatus ||
+      typingStatus.conversationId !== conversation.id ||
+      typingStatus.senderId !== conversation.other_user.id
+    ) {
+      return;
+    }
+
+    setIsOtherUserTyping(typingStatus.isTyping);
+  }, [conversation.id, conversation.other_user.id, typingStatus]);
+
+  useEffect(() => {
+    setIsOtherUserTyping(false);
+  }, [conversation.id]);
+
+  useEffect(() => {
     const messageList = messageListRef.current;
 
     if (!messageList) {
@@ -131,7 +150,11 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
       </div>
 
       <div className="shrink-0 border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
-        {/* MessageInput goes here */}
+        <TypingIndicator
+          isVisible={isOtherUserTyping}
+          userName={conversation.other_user.name}
+        />
+        <MessageInput conversationId={conversation.id} />
       </div>
     </div>
   );
