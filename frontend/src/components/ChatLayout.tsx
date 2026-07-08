@@ -1,5 +1,7 @@
 ﻿import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+import { useAuth } from "../context/AuthContext";
 
 interface ChatLayoutProps {
   sidebar: ReactNode;
@@ -7,6 +9,14 @@ interface ChatLayoutProps {
 }
 
 function ChatLayout({ sidebar, children }: ChatLayoutProps) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout(): void {
+    logout();
+    navigate("/login");
+  }
+
   return (
     <div className="flex h-screen flex-col bg-white text-slate-950 dark:bg-slate-950 dark:text-white md:flex-row">
       <aside className="h-80 w-full shrink-0 overflow-y-auto border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:h-full md:w-80 md:border-b-0 md:border-r">
@@ -14,12 +24,21 @@ function ChatLayout({ sidebar, children }: ChatLayoutProps) {
           <span className="text-base font-semibold text-slate-950 dark:text-white">
             PulseChat
           </span>
-          <Link
-            className="text-sm font-medium text-sky-600 transition hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
-            to="/profile"
-          >
-            Profile
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              className="text-sm font-medium text-sky-600 transition hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+              to="/profile"
+            >
+              Profile
+            </Link>
+            <button
+              className="text-sm font-medium text-sky-600 transition hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+              type="button"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {sidebar}
