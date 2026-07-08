@@ -1,5 +1,6 @@
-import { FormEvent, useEffect, useState } from "react";
+﻿import { FormEvent, useEffect, useState } from "react";
 import { isAxiosError } from "axios";
+import { Link } from "react-router-dom";
 
 import { getCurrentUser, updateProfile } from "../api/users";
 import type { User } from "../types/auth";
@@ -66,6 +67,13 @@ function Profile() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 dark:bg-slate-950">
       <section className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <Link
+          className="mb-4 inline-block text-sm font-medium text-sky-600 transition hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+          to="/"
+        >
+          Back to Chat
+        </Link>
+
         <h1 className="text-2xl font-semibold text-slate-950 dark:text-white">
           Profile
         </h1>
