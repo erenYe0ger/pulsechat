@@ -2,11 +2,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Home from "./pages/Home";
 import ProtectedRoute from "./routes/ProtectedRoute";
-
-function Home() {
-  return <div>Chat Home - Protected</div>;
-}
 
 function App() {
   return (
