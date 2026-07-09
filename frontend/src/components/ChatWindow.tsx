@@ -18,6 +18,7 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
+  const previousMessageCountRef = useRef(0);
   const { user } = useAuth();
   const { lastMessage, readReceipt, typingStatus } = useSocket();
 
@@ -96,11 +97,11 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
   useEffect(() => {
     const messageList = messageListRef.current;
 
-    if (!messageList) {
-      return;
+    if (messageList && messages.length > previousMessageCountRef.current) {
+      messageList.scrollTop = messageList.scrollHeight;
     }
 
-    messageList.scrollTop = messageList.scrollHeight;
+    previousMessageCountRef.current = messages.length;
   }, [messages]);
 
   return (

@@ -1,4 +1,5 @@
 ﻿import type { Message } from "../types/chat";
+import { parseUTCDate } from "../utils/date";
 
 interface MessageBubbleProps {
   message: Message;
@@ -6,7 +7,7 @@ interface MessageBubbleProps {
 }
 
 function formatMessageTime(value: string): string {
-  return new Date(value).toLocaleTimeString(undefined, {
+  return parseUTCDate(value).toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -33,7 +34,10 @@ function MessageBubble({ message, isOwnMessage }: MessageBubbleProps) {
         <div className="flex items-center gap-1 px-1 text-xs text-slate-500 dark:text-slate-400">
           <span>{formatMessageTime(message.created_at)}</span>
           {isOwnMessage && (
-            <span className="text-sky-600 dark:text-sky-400" aria-label={message.is_read ? "Read" : "Sent"}>
+            <span
+              className="text-sky-600 dark:text-sky-400"
+              aria-label={message.is_read ? "Read" : "Sent"}
+            >
               {message.is_read ? "✓✓" : "✓"}
             </span>
           )}

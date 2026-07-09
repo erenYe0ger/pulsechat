@@ -1,4 +1,5 @@
-import type { Conversation } from "../types/chat";
+﻿import type { Conversation } from "../types/chat";
+import { parseUTCDate } from "../utils/date";
 
 interface ConversationListItemProps {
   conversation: Conversation;
@@ -8,7 +9,7 @@ interface ConversationListItemProps {
 }
 
 function formatRelativeTime(value: string): string {
-  const date = new Date(value);
+  const date = parseUTCDate(value);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMinutes = Math.floor(diffMs / 60000);

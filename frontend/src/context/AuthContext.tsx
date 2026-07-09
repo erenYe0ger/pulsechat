@@ -1,4 +1,4 @@
-import {
+﻿import {
   createContext,
   type ReactNode,
   useContext,
@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import api from "../api/axios";
+import { getCurrentUser } from "../api/users";
 import type {
   AuthResponse,
   LoginPayload,
@@ -54,6 +55,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     localStorage.setItem("token", response.data.access_token);
     setToken(response.data.access_token);
+
+    const currentUser = await getCurrentUser();
+    localStorage.setItem("user", JSON.stringify(currentUser));
+    setUser(currentUser);
   }
 
   async function register(
