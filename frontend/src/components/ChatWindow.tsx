@@ -19,8 +19,16 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const previousMessageCountRef = useRef(0);
+  const typingHideTimeoutRef = useRef<number | null>(null);
   const { user } = useAuth();
   const { lastMessage, readReceipt, typingStatus } = useSocket();
+
+  function clearTypingHideTimeout(): void {
+    if (typingHideTimeoutRef.current !== null) {
+      window.clearTimeout(typingHideTimeoutRef.current);
+      typingHideTimeoutRef.current = null;
+    }
+  }
 
   useEffect(() => {
     let isCurrentConversation = true;
@@ -53,6 +61,11 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
       return;
     }
 
+    if (lastMessage.sender_id === conversation.other_user.id) {
+      clearTypingHideTimeout();
+      setIsOtherUserTyping(false);
+    }
+
     setMessages((currentMessages) => {
       const lastCurrentMessage = currentMessages[currentMessages.length - 1];
 
@@ -62,7 +75,7 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
 
       return [...currentMessages, lastMessage];
     });
-  }, [conversation.id, lastMessage]);
+  }, [conversation.id, conversation.other_user.id, lastMessage]);
 
   useEffect(() => {
     if (!readReceipt || readReceipt.conversationId !== conversation.id) {
@@ -87,11 +100,26 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
       return;
     }
 
-    setIsOtherUserTyping(typingStatus.isTyping);
+    clearTypingHideTimeout();
+
+    if (typingStatus.isTyping) {
+      setIsOtherUserTyping(true);
+      return;
+    }
+
+    typingHideTimeoutRef.current = window.setTimeout(() => {
+      setIsOtherUserTyping(false);
+      typingHideTimeoutRef.current = null;
+    }, 2000);
   }, [conversation.id, conversation.other_user.id, typingStatus]);
 
   useEffect(() => {
+    clearTypingHideTimeout();
     setIsOtherUserTyping(false);
+
+    return () => {
+      clearTypingHideTimeout();
+    };
   }, [conversation.id]);
 
   useEffect(() => {

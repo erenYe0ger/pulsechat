@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session, aliased
@@ -72,6 +72,19 @@ async def notify_partners_status(
             )
 
 
+async def notify_self_of_online_partners(db: Session, user_id: int) -> None:
+    for partner_id in get_conversation_partner_ids(db, user_id):
+        if manager.is_online(partner_id):
+            await manager.send_to_user(
+                user_id,
+                {
+                    "type": "status",
+                    "user_id": partner_id,
+                    "is_online": True,
+                },
+            )
+
+
 def serialize_message(message) -> dict:
     return {
         "id": message.id,
@@ -114,6 +127,7 @@ async def websocket_endpoint(
     user.is_online = True
     db.commit()
     await notify_partners_status(db, user.id, True)
+    await notify_self_of_online_partners(db, user.id)
 
     try:
         while True:
