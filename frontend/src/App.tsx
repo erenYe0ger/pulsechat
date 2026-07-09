@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
-import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -21,10 +21,10 @@ function App() {
           }
         />
         <Route
-          path="/profile"
+          path="/settings"
           element={
             <ProtectedRoute>
-              <Profile />
+              <Settings />
             </ProtectedRoute>
           }
         />

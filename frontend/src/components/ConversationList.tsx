@@ -57,27 +57,32 @@ const ConversationList = forwardRef<ConversationListHandle, ConversationListProp
 
     if (isLoading) {
       return (
-        <div className="space-y-2 p-3">
+        <div className="h-full overflow-y-auto p-3">
+          <div className="space-y-2">
           {[0, 1, 2].map((item) => (
             <div
               className="h-16 animate-pulse rounded-md bg-slate-200 dark:bg-slate-800"
               key={item}
             />
           ))}
+          </div>
         </div>
       );
     }
 
     if (conversations.length === 0) {
       return (
-        <p className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
-          No conversations yet. Search for a user to start chatting.
-        </p>
+        <div className="h-full overflow-y-auto">
+          <p className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
+            No conversations yet. Search for a user to start chatting.
+          </p>
+        </div>
       );
     }
 
     return (
-      <div className="divide-y divide-slate-200 dark:divide-slate-800">
+      <div className="h-full overflow-y-auto">
+        <div className="divide-y divide-slate-200 dark:divide-slate-800">
         {conversations.map((conversation) => (
           <ConversationListItem
             conversation={conversation}
@@ -87,6 +92,7 @@ const ConversationList = forwardRef<ConversationListHandle, ConversationListProp
             onClick={() => onSelectConversation(conversation)}
           />
         ))}
+        </div>
       </div>
     );
   }
