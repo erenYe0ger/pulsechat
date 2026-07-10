@@ -1,11 +1,11 @@
 ﻿import logging
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session, aliased
 
 from app.core.security import decode_access_token
 from app.core.ws_manager import manager
-from app.db.session import get_db
+from app.db.session import SessionLocal
 from app.models.conversation_member import ConversationMember
 from app.models.user import User
 from app.services.message_service import create_message, mark_messages_read
@@ -100,34 +100,39 @@ def serialize_message(message) -> dict:
 async def websocket_endpoint(
     websocket: WebSocket,
     token: str = Query(...),
-    db: Session = Depends(get_db),
 ):
-    payload = decode_access_token(token)
-    if payload is None:
-        await websocket.close(code=1008)
-        return
+    with SessionLocal() as db:
+        payload = decode_access_token(token)
+        if payload is None:
+            await websocket.close(code=1008)
+            return
 
-    user_id = payload.get("sub")
-    if user_id is None:
-        await websocket.close(code=1008)
-        return
+        user_id = payload.get("sub")
+        if user_id is None:
+            await websocket.close(code=1008)
+            return
 
-    try:
-        token_user_id = int(user_id)
-    except ValueError:
-        await websocket.close(code=1008)
-        return
+        try:
+            token_user_id = int(user_id)
+        except ValueError:
+            await websocket.close(code=1008)
+            return
 
-    user = db.query(User).filter(User.id == token_user_id).first()
-    if user is None:
-        await websocket.close(code=1008)
-        return
+        user = db.query(User).filter(User.id == token_user_id).first()
+        if user is None:
+            await websocket.close(code=1008)
+            return
 
-    await manager.connect(user.id, websocket)
-    user.is_online = True
-    db.commit()
-    await notify_partners_status(db, user.id, True)
-    await notify_self_of_online_partners(db, user.id)
+        current_user_id = user.id
+
+    await manager.connect(current_user_id, websocket)
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == current_user_id).first()
+        if user is not None:
+            user.is_online = True
+            db.commit()
+        await notify_partners_status(db, current_user_id, True)
+        await notify_self_of_online_partners(db, current_user_id)
 
     try:
         while True:
@@ -138,28 +143,45 @@ async def websocket_endpoint(
                 if message_type == "message":
                     conversation_id = int(data["conversation_id"])
                     content = data["content"]
-                    message = create_message(db, conversation_id, user.id, content)
-                    other_user_id = get_other_member_id(db, conversation_id, user.id)
-                    outgoing_data = {
-                        "type": "message",
-                        "message": serialize_message(message),
-                    }
 
-                    await manager.send_to_user(user.id, outgoing_data)
+                    with SessionLocal() as db:
+                        message = create_message(
+                            db,
+                            conversation_id,
+                            current_user_id,
+                            content,
+                        )
+                        other_user_id = get_other_member_id(
+                            db,
+                            conversation_id,
+                            current_user_id,
+                        )
+                        outgoing_data = {
+                            "type": "message",
+                            "message": serialize_message(message),
+                        }
+
+                    await manager.send_to_user(current_user_id, outgoing_data)
                     if other_user_id is not None:
                         await manager.send_to_user(other_user_id, outgoing_data)
 
                 elif message_type == "typing":
                     conversation_id = int(data["conversation_id"])
                     is_typing = bool(data["is_typing"])
-                    other_user_id = get_other_member_id(db, conversation_id, user.id)
+
+                    with SessionLocal() as db:
+                        other_user_id = get_other_member_id(
+                            db,
+                            conversation_id,
+                            current_user_id,
+                        )
 
                     if other_user_id is not None:
                         await manager.send_to_user(
                             other_user_id,
                             {
                                 "type": "typing",
-                                "sender_id": user.id,
+                                "sender_id": current_user_id,
                                 "conversation_id": conversation_id,
                                 "is_typing": is_typing,
                             },
@@ -167,10 +189,22 @@ async def websocket_endpoint(
 
                 elif message_type == "read":
                     conversation_id = int(data["conversation_id"])
-                    other_user_id = get_other_member_id(db, conversation_id, user.id)
+
+                    with SessionLocal() as db:
+                        other_user_id = get_other_member_id(
+                            db,
+                            conversation_id,
+                            current_user_id,
+                        )
+
+                        if other_user_id is not None:
+                            message_ids = mark_messages_read(
+                                db,
+                                conversation_id,
+                                current_user_id,
+                            )
 
                     if other_user_id is not None:
-                        message_ids = mark_messages_read(db, conversation_id, user.id)
                         await manager.send_to_user(
                             other_user_id,
                             {
@@ -186,7 +220,10 @@ async def websocket_endpoint(
                 continue
 
     except WebSocketDisconnect:
-        manager.disconnect(user.id)
-        user.is_online = False
-        db.commit()
-        await notify_partners_status(db, user.id, False)
+        manager.disconnect(current_user_id)
+        with SessionLocal() as db:
+            user = db.query(User).filter(User.id == current_user_id).first()
+            if user is not None:
+                user.is_online = False
+                db.commit()
+            await notify_partners_status(db, current_user_id, False)
