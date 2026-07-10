@@ -129,9 +129,9 @@ function Settings() {
           </h2>
 
           {isFetching ? (
-            <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-              Loading profile...
-            </p>
+            <div className="mt-4 flex justify-center py-4">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-sky-600 dark:border-slate-700 dark:border-t-sky-400" />
+            </div>
           ) : (
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
               <div>

@@ -1,7 +1,8 @@
-﻿import {
+import {
   createContext,
   type ReactNode,
   useContext,
+  useEffect,
   useState,
 } from "react";
 
@@ -17,6 +18,7 @@ import type {
 interface AuthContextValue {
   token: string | null;
   user: User | null;
+  isInitializing: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -48,6 +50,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.getItem("token")
   );
   const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    setIsInitializing(false);
+  }, []);
 
   async function login(email: string, password: string): Promise<void> {
     const payload: LoginPayload = { email, password };
@@ -78,7 +85,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ token, user, isInitializing, login, register, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
