@@ -4,12 +4,15 @@ import { Link } from "react-router-dom";
 interface ChatLayoutProps {
   sidebar: ReactNode;
   children: ReactNode;
+  isConversationActive?: boolean;
 }
 
-function ChatLayout({ sidebar, children }: ChatLayoutProps) {
+function ChatLayout({ sidebar, children, isConversationActive = false }: ChatLayoutProps) {
   return (
     <div className="flex h-screen flex-col bg-white text-slate-950 dark:bg-slate-950 dark:text-white md:flex-row">
-      <aside className="flex h-full w-full shrink-0 flex-col overflow-hidden border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:w-80 md:border-b-0 md:border-r">
+      <aside className={`h-full w-full shrink-0 flex-col overflow-hidden border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:w-80 md:border-b-0 md:border-r ${
+        isConversationActive ? "hidden md:flex" : "flex"
+      }`}>
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <span className="text-base font-semibold text-slate-950 dark:text-white">
             PulseChat
@@ -40,7 +43,9 @@ function ChatLayout({ sidebar, children }: ChatLayoutProps) {
         <div className="min-h-0 flex-1">{sidebar}</div>
       </aside>
 
-      <main className="min-h-0 flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950 md:bg-white md:dark:bg-slate-950">
+      <main className={`min-h-0 flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950 md:bg-white md:dark:bg-slate-950 ${
+        isConversationActive ? "flex" : "hidden md:flex"
+      }`}>
         {children}
       </main>
     </div>

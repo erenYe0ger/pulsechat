@@ -78,11 +78,12 @@ function Home() {
   return (
     <>
       <ChatLayout
+        isConversationActive={!!activeConversation}
         sidebar={
           <div className="flex h-full flex-col bg-white dark:bg-slate-950">
             <div className="shrink-0 border-b border-slate-200 p-3 dark:border-slate-800">
               <button
-                className="w-full rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600"
+                className="mx-auto block w-full max-w-xs rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600"
                 type="button"
                 onClick={() => setIsNewChatModalOpen(true)}
               >
@@ -102,27 +103,20 @@ function Home() {
         }
       >
         {activeConversation ? (
-          <div className="flex h-full flex-col">
-            <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-950">
-              <button
-                className="text-sm font-medium text-sky-600 transition hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
-                type="button"
-                onClick={() => setActiveConversation(null)}
-              >
-                Back
-              </button>
-            </div>
+          <div className="flex h-full w-full flex-col">
             <div className="min-h-0 flex-1">
               <ChatWindow
                 conversation={activeConversation}
                 isOtherUserOnline={onlineUserIds.has(
                   activeConversation.other_user.id
                 )}
+                onBack={() => setActiveConversation(null)}
+                showBackButton={true}
               />
             </div>
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-slate-500 dark:text-slate-400">
+          <div className="flex h-full w-full items-center justify-center px-4 text-center text-slate-500 dark:text-slate-400">
             Select a conversation to start chatting
           </div>
         )}

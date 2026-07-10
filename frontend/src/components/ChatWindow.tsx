@@ -11,9 +11,16 @@ import TypingIndicator from "./TypingIndicator";
 interface ChatWindowProps {
   conversation: Conversation;
   isOtherUserOnline: boolean;
+  onBack: () => void;
+  showBackButton?: boolean;
 }
 
-function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
+function ChatWindow({
+  conversation,
+  isOtherUserOnline,
+  onBack,
+  showBackButton = false,
+}: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
@@ -135,7 +142,28 @@ function ChatWindow({ conversation, isOtherUserOnline }: ChatWindowProps) {
   return (
     <div className="flex h-full flex-col bg-white dark:bg-slate-950">
       <header className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {showBackButton && (
+            <button
+              aria-label="Back"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+              type="button"
+              onClick={onBack}
+            >
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+          )}
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold text-slate-950 dark:text-white">
               {conversation.other_user.name}
