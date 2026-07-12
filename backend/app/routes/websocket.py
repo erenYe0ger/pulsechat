@@ -55,6 +55,21 @@ def get_conversation_partner_ids(db: Session, user_id: int) -> list[int]:
     return [row[0] for row in rows]
 
 
+def get_conversation_partner_map(db: Session, user_id: int) -> dict[int, int]:
+    member = aliased(ConversationMember)
+    partner = aliased(ConversationMember)
+
+    rows = (
+        db.query(partner.conversation_id, partner.user_id)
+        .join(member, member.conversation_id == partner.conversation_id)
+        .filter(member.user_id == user_id)
+        .filter(partner.user_id != user_id)
+        .all()
+    )
+
+    return {conversation_id: partner_id for conversation_id, partner_id in rows}
+
+
 async def notify_partners_status(
     db: Session,
     user_id: int,
@@ -124,6 +139,7 @@ async def websocket_endpoint(
             return
 
         current_user_id = user.id
+        conversation_partner_ids = get_conversation_partner_map(db, current_user_id)
 
     await manager.connect(current_user_id, websocket)
     with SessionLocal() as db:
@@ -156,6 +172,8 @@ async def websocket_endpoint(
                             conversation_id,
                             current_user_id,
                         )
+                        if other_user_id is not None:
+                            conversation_partner_ids[conversation_id] = other_user_id
                         outgoing_data = {
                             "type": "message",
                             "message": serialize_message(message),
@@ -168,13 +186,7 @@ async def websocket_endpoint(
                 elif message_type == "typing":
                     conversation_id = int(data["conversation_id"])
                     is_typing = bool(data["is_typing"])
-
-                    with SessionLocal() as db:
-                        other_user_id = get_other_member_id(
-                            db,
-                            conversation_id,
-                            current_user_id,
-                        )
+                    other_user_id = conversation_partner_ids.get(conversation_id)
 
                     if other_user_id is not None:
                         await manager.send_to_user(
@@ -198,6 +210,7 @@ async def websocket_endpoint(
                         )
 
                         if other_user_id is not None:
+                            conversation_partner_ids[conversation_id] = other_user_id
                             message_ids = mark_messages_read(
                                 db,
                                 conversation_id,
@@ -218,8 +231,7 @@ async def websocket_endpoint(
             except Exception:
                 logger.exception("Error processing websocket message")
                 continue
-
-    except WebSocketDisconnect:
+    finally:
         manager.disconnect(current_user_id)
         with SessionLocal() as db:
             user = db.query(User).filter(User.id == current_user_id).first()

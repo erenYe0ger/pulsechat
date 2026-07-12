@@ -1,4 +1,8 @@
+﻿import logging
+
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
@@ -15,7 +19,11 @@ class ConnectionManager:
     async def send_to_user(self, user_id: int, data: dict) -> None:
         websocket = self.active_connections.get(user_id)
         if websocket:
-            await websocket.send_json(data)
+            try:
+                await websocket.send_json(data)
+            except Exception:
+                logger.exception("Failed to send websocket message to user %s", user_id)
+                self.disconnect(user_id)
 
     def is_online(self, user_id: int) -> bool:
         return user_id in self.active_connections
