@@ -16,6 +16,7 @@ function Home() {
     useState<Conversation | null>(null);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<number>>(new Set());
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const conversationListRef = useRef<ConversationListHandle | null>(null);
   const { lastMessage, onlineStatusUpdate, sendRead } = useSocket();
 
@@ -38,6 +39,28 @@ function Home() {
   }, [onlineStatusUpdate]);
 
   useEffect(() => {
+    if (conversations.length === 0) {
+      return;
+    }
+
+    setOnlineUserIds((currentOnlineUserIds) => {
+      const nextOnlineUserIds = new Set(currentOnlineUserIds);
+      let changed = false;
+
+      for (const conversation of conversations) {
+        if (conversation.other_user.is_online) {
+          if (!nextOnlineUserIds.has(conversation.other_user.id)) {
+            nextOnlineUserIds.add(conversation.other_user.id);
+            changed = true;
+          }
+        }
+      }
+
+      return changed ? nextOnlineUserIds : currentOnlineUserIds;
+    });
+  }, [conversations]);
+
+  useEffect(() => {
     if (!activeConversation) {
       return;
     }
@@ -56,6 +79,15 @@ function Home() {
 
   async function handleUserSelected(user: User): Promise<void> {
     const conversationResponse = await createOrGetConversation(user.id);
+
+    if (conversationResponse.other_user.is_online || user.is_online) {
+      setOnlineUserIds((current) => {
+        const next = new Set(current);
+        next.add(user.id);
+        return next;
+      });
+    }
+
     setIsNewChatModalOpen(false);
 
     await conversationListRef.current?.refreshConversations();
@@ -64,15 +96,7 @@ function Home() {
       (conversation) => conversation.id === conversationResponse.id
     );
 
-    setActiveConversation(
-      refreshedConversation ?? {
-        id: conversationResponse.id,
-        other_user: user,
-        last_message: null,
-        last_message_at: null,
-        unread_count: 0,
-      }
-    );
+    setActiveConversation(refreshedConversation ?? conversationResponse);
   }
 
   return (
@@ -96,6 +120,7 @@ function Home() {
                 activeConversationId={activeConversation?.id ?? null}
                 onSelectConversation={setActiveConversation}
                 onlineUserIds={onlineUserIds}
+                onConversationsLoaded={setConversations}
                 ref={conversationListRef}
               />
             </div>

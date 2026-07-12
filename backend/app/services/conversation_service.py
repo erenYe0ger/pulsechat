@@ -58,6 +58,39 @@ def get_or_create_conversation(
     return conversation
 
 
+def get_conversation_detail(db: Session, conversation_id: int, user_id: int) -> dict:
+    other_user = (
+        db.query(User)
+        .join(ConversationMember, ConversationMember.user_id == User.id)
+        .filter(ConversationMember.conversation_id == conversation_id)
+        .filter(User.id != user_id)
+        .first()
+    )
+
+    last_message = (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at.desc())
+        .first()
+    )
+
+    unread_count = (
+        db.query(func.count(Message.id))
+        .filter(Message.conversation_id == conversation_id)
+        .filter(Message.sender_id != user_id)
+        .filter(Message.is_read == False)
+        .scalar()
+    )
+
+    return {
+        "id": conversation_id,
+        "other_user": other_user,
+        "last_message": last_message.content if last_message else None,
+        "last_message_at": last_message.created_at if last_message else None,
+        "unread_count": unread_count or 0,
+    }
+
+
 def get_user_conversations(db: Session, user_id: int) -> list[dict]:
     conversations = (
         db.query(Conversation)
@@ -66,41 +99,10 @@ def get_user_conversations(db: Session, user_id: int) -> list[dict]:
         .all()
     )
 
-    conversation_summaries = []
-
-    for conversation in conversations:
-        other_user = (
-            db.query(User)
-            .join(ConversationMember, ConversationMember.user_id == User.id)
-            .filter(ConversationMember.conversation_id == conversation.id)
-            .filter(User.id != user_id)
-            .first()
-        )
-
-        last_message = (
-            db.query(Message)
-            .filter(Message.conversation_id == conversation.id)
-            .order_by(Message.created_at.desc())
-            .first()
-        )
-
-        unread_count = (
-            db.query(func.count(Message.id))
-            .filter(Message.conversation_id == conversation.id)
-            .filter(Message.sender_id != user_id)
-            .filter(Message.is_read == False)
-            .scalar()
-        )
-
-        conversation_summaries.append(
-            {
-                "id": conversation.id,
-                "other_user": other_user,
-                "last_message": last_message.content if last_message else None,
-                "last_message_at": last_message.created_at if last_message else None,
-                "unread_count": unread_count or 0,
-            }
-        )
+    conversation_summaries = [
+        get_conversation_detail(db, conversation.id, user_id)
+        for conversation in conversations
+    ]
 
     return sorted(
         conversation_summaries,
@@ -110,3 +112,4 @@ def get_user_conversations(db: Session, user_id: int) -> list[dict]:
         ),
         reverse=True,
     )
+

@@ -14,6 +14,7 @@ interface ConversationListProps {
   activeConversationId: number | null;
   onSelectConversation: (conversation: Conversation) => void;
   onlineUserIds: Set<number>;
+  onConversationsLoaded?: (conversations: Conversation[]) => void;
 }
 
 export interface ConversationListHandle {
@@ -23,7 +24,7 @@ export interface ConversationListHandle {
 
 const ConversationList = forwardRef<ConversationListHandle, ConversationListProps>(
   function ConversationList(
-    { activeConversationId, onSelectConversation, onlineUserIds },
+    { activeConversationId, onSelectConversation, onlineUserIds, onConversationsLoaded },
     ref
   ) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -32,7 +33,8 @@ const ConversationList = forwardRef<ConversationListHandle, ConversationListProp
     const refreshConversations = useCallback(async () => {
       const fetchedConversations = await getConversations();
       setConversations(fetchedConversations);
-    }, []);
+      onConversationsLoaded?.(fetchedConversations);
+    }, [onConversationsLoaded]);
 
     useImperativeHandle(
       ref,

@@ -1,15 +1,10 @@
 import api from "./axios";
 import type { Conversation, Message } from "../types/chat";
 
-interface CreateOrGetConversationResponse {
-  id: number;
-  other_user_id: number;
-}
-
 export async function createOrGetConversation(
   otherUserId: number
-): Promise<CreateOrGetConversationResponse> {
-  const response = await api.post<CreateOrGetConversationResponse>(
+): Promise<Conversation> {
+  const response = await api.post<Conversation>(
     "/conversations",
     { other_user_id: otherUserId }
   );
